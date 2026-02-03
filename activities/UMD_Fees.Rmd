@@ -28,11 +28,28 @@ umd_fees_pct <- umd_fees |> mutate(pct_change = (`Fall 2024`- `Fall 2021`)/`Fall
 ```
 
 
+```{r}
+umd_fees_pct_2524 <- umd_fees |> mutate(pct_change = (`Fall 2025`- `Fall 2024`)/`Fall 2025` * 100)
+```
 
 ### Task 4: Describe our results
 
 Write a few sentences about what you found in the data. What's the story here?
 
+The story here is that while the fees for recreation services, student union and counseling center are all around 3 percent,there is an 8 percent increase in shuttle bus fees and a 12 percent increase for student activities fees. It would be worth looking into what the university is doing with the extra revenue it is receiving from students.
+
+```{r}
+comp <- read_csv("https://raw.githubusercontent.com/dwillis/jour405/refs/heads/main/data/class_composition.csv")
+
+comp |>
+  summarize(
+    mean_first = mean(first_year),
+    mean_soph = mean(sophomore),
+    mean_junior = mean(junior),
+    mean_senior = mean(senior),
+    mean_grad = mean(grad)
+  )
+```
 
 
 
