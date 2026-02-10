@@ -37,9 +37,9 @@ team_aces |> mutate(percentile = ntile(total_aces, 100))
 
 Write a couple of sentences that puts Maryland into context with the other teams in the dataset. You can do some Internet research to help with this.
 
+Maryland is in the 95th percentile for service aces in the entire country. One reason for this was because of Maryland Rightside Hitter Samantha Schnitta, who led the country with 88 service aces. She broke the Maryland record in 2024 and was named 2nd Team All-Big Ten. Despite Maryland finishing 5-15 in conference play in 2024, Schnitta still led Maryland to have some of the most service aces in the country.
 
-
-When you are done, save your work, switch to GitHub Desktop, then add, commit and push your changes to GitHub and submit the URL of the notebook in ELMS.
+When you are done, save your work, switch to GitHub Desktop, then add, commit and push your changes to GitHub and submit the URL of the notebook in ELMS. 
 
 
 
