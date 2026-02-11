@@ -63,3 +63,15 @@ ANSWER HERE
 ### Task 9: Save Your Work and Put it on GitHub
 
 Save this notebook, then commit it to your local repository. Push the changes to your GitHub repository and submit the URL for this file in ELMS.
+
+### Task 10: Violent Crime Percentiles & IQR
+
+````{r}
+md_cities_percentiles <- md_cities_change |> mutate(percentile = ntile(violent2020, 100))
+````
+There are 10 cities above the 90th percentile. 
+
+````{r}
+md_cities_percentiles |> summarize(violent2020_IQR = IQR(violent_rate_2020))
+````
+I don't think finding out the IQR changes my best story idea, as the IQR is not a terribly large number. Because the IQR is fairly small, it means that the middle 50% of the data doesn't have that much variability. The IQR doesn't affect my original idea of looking into Ocean City, as the town had one of the highest violent crime rates. 
