@@ -74,7 +74,7 @@ summary(daily_calls$call_count)
 
 Let's visualize the time series of daily calls. What patterns do you see? If you had to draw horizontal lines that would highlight unusual days, where would those lines be?
 
-ANSWER HERE
+ANSWER HERE - I noticed that there is a slight downward trend in calls near the end of the calendar year and it leads into January. Compared to January 2022, January 2023 has less calls. There is also a large spike in early October and on New Year's Day. 
 
 ```{r daily-calls-plot}
 # Plot daily call volume
@@ -299,4 +299,5 @@ top_outliers |> kable(digits = 2)
 Based on our z-score analysis, what are some potential angles for reporting? What would your next steps be and what would you tell an editor about your findings?
 
 ANSWER HERE
+The unusual amount of calls between July 14-22 in Baltimore could be one angle. I would first investigate what was going on in Baltimore that week. I would refer to social media traffic, and local events pages. I would also talk with law enforcement to see if other crimes increased during that week. I would tell my editor that July 14-22 had an usually high spike in 911 calls and it is worth looking into why that might be. 
 
