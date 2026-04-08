@@ -232,7 +232,8 @@ kable(comparison, digits = 1, caption = "Difference Between Weighted and Unweigh
 **Answer These Questions:**
 
 1. Which voter category shows the biggest difference between weighted and unweighted results?
-
+The voter category with the biggest difference between weighted and unweighted results is the always/never group who responded 'yes', with a 3.6% decrease after applying the weights.
 2. How might these differences affect reporting on likely voter turnout?
-
+This differences give reporters a different view of voter turnout, as they likely would anticipate a lower turnout, as a result of the lower percentages with the weights applied. 
 3. Why do you think these differences exist? What does this tell us about who might be over or under-represented in the sample?
+These differences exist because different groups of voters, especially when pollsters are measuring enthusiasm, will have varying motivations to respond to polls. Unweighted polls might overrepresent peoeple who always vote because they are eager to vote and are proud of it. The larger the percentage difference with the weights applied, the more over/underrepresentation in the poll sample.
