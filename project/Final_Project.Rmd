@@ -1,0 +1,25 @@
+---
+title: "final_project"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+plot(cars)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+```{r}
+Hitter_Data <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vQO9vqzzhwbkGxR7pt0q633QjA_utllzt6T2Ik3RYg9RHXY6hAcCFe9sKWyAZyAM7IwDJAFTng9MFH3/pub?gid=1132270608&single=true&output=csv")
+```
+The first dataset is from Baseball Reference and it has the full MLB player hitting stats from the 2025 regular season (https://www.baseball-reference.com/leagues/majors/2025-standard-batting.shtml). This dataset has every player from the last season and their cumulative stats. The most important columns will be the WAR and home runs statistics, but the breadth of the data allows me to analyze more stats if I want. 
+
+```{r}
+Pitcher_Data <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vQO9vqzzhwbkGxR7pt0q633QjA_utllzt6T2Ik3RYg9RHXY6hAcCFe9sKWyAZyAM7IwDJAFTng9MFH3/pub?gid=0&single=true&output=csv")
+
+```
+The second data set is also from Baseball Reference and it has the full MLB player pitching stats from the 2025 regular season. (https://www.baseball-reference.com/leagues/majors/2025-standard-pitching.shtml). This dataset has every pitcher from the last season and their cumulative stats. The most important columns in this dataset will be the K/9 column, and I might also utilize other stats like ERA, FIP and Strikeouts. The other two datasets are from Spotrac (https://www.spotrac.com/mlb/rankings/player/_/year/2025/sort/contract_average) and they have the top salaries from the last two MLB seasons. I will be using the salary column. I'm not sure if I'll need anything else data-wise, but I would like some guidance on what types of charts I will use to display my data, as well as how to analyze correlation in RStudio. 
+
