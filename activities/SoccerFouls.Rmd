@@ -48,6 +48,19 @@ matches |>
 
 
 ### Task 6: Describe the results of both the correlation calculation and the scatterplot.
+Since the line of best fit is virtually flat, we can conclude that there is little to no correlation between the number of fouls a team commits and the goal differential. Based on the scatterplot, there doesn't seem to be any effect that fouls have on goal differential. 
 
+### Task 7: Pick another variable and see if they're related to goal differential, describe the result.
+
+```{r}
+matches |> summarize(correlation = cor(corners, goal_diff, method="pearson"))
+```
+```{r}
+matches |> 
+  ggplot() +
+  geom_point(aes(x=goal_diff, y=corners)) +
+  geom_smooth(aes(x=goal_diff, y=corners), method="lm")
+```
+The correlation coefficient is approximately 0.378, which would indicate there is a weak positive correlation between the number of corners and goal differential. Corner kicks appears to effect the outcome of the game, but it isn't a dominant factor. 
 
 When you are done, save your work, switch to GitHub Desktop, then add, commit and push your changes to GitHub and submit the URL of the notebook in ELMS.
