@@ -7,6 +7,9 @@ This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute
 
 Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
 
+My final project will mainly rely on histograms and scatter plots. The histograms will come in handy for contextualizing both the salary and MLB-statistic data. In order to first establish what MLB stats I will use, I may make a histogram of the top 10 in a particular stat, broken down by position (SS, 2B, etc.). The scatter plots will be the driving point of my project, as they will ultimately show the varying correlations between a specific stat and the salary. These tests will also be compared across different years, as I already have the salary data for the last two years and could pull the data from previous seasons, as well. I was also wondering whether using z-scores may be useful for my project. I was thinking I could show the salaries of the top-10 MLB players in a given stat and compare them to the league average. 
+
+
 ```{r}
 plot(cars)
 ```
