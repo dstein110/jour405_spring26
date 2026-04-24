@@ -26,3 +26,139 @@ Pitcher_Data <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vQO9vq
 ```
 The second data set is also from Baseball Reference and it has the full MLB player pitching stats from the 2025 regular season. (https://www.baseball-reference.com/leagues/majors/2025-standard-pitching.shtml). This dataset has every pitcher from the last season and their cumulative stats. The most important columns in this dataset will be the K/9 column, and I might also utilize other stats like ERA, FIP and Strikeouts. The other two datasets are from Spotrac (https://www.spotrac.com/mlb/rankings/player/_/year/2025/sort/contract_average) and they have the top salaries from the last two MLB seasons. I will be using the salary column. I'm not sure if I'll need anything else data-wise, but I would like some guidance on what types of charts I will use to display my data, as well as how to analyze correlation in RStudio. 
 
+*Joining Salary Data with Hitter Data*
+```{r}
+library(tidyverse)
+library(stringi)
+
+clean_name <- function(x) {
+  x |>
+    stri_trans_general("Latin-ASCII") |>
+    str_to_lower() |>
+    str_replace_all("[\\.,'*]", "") |>         # drop punctuation; bbref sometimes appends *
+    str_replace_all("\\s+(jr|sr|ii|iii|iv)\\b", "") |>
+    str_squish()
+}
+
+salaries <- read_csv("https://raw.githubusercontent.com/dstein110/jour405_spring26/refs/heads/main/project/salaries_spotrac_2025.csv") |>
+  mutate(
+    name_key = clean_name(player),
+    primary_pos = str_split_i(position, "/", 1)   # "SP/SP1" -> "SP"
+  )
+
+hitters <- Hitter_Data |>
+  mutate(name_key = clean_name(Player)) |>
+  filter(Team == "TOT" | !Player %in% Player[duplicated(Player)])   # keep TOT row for traded players
+
+hitters_paid <- hitters |>
+  inner_join(salaries, by = c("name_key", "Team" = "team"))
+
+# Hitters missing salary
+hitters |>
+  anti_join(salaries, by = c("name_key", "Team" = "team")) |>
+  select(Player, Team) |>
+  print(n = 30)
+
+# Salary rows with no matching hitter (likely pitchers — they'd match the pitcher frame instead)
+salaries |>
+  anti_join(hitters, by = c("name_key", "Team" = "team")) |>
+  select(player, team, position)
+```
+Appears to be a problem at the end of the code with the "anti_join()" function. But the new dataframe seems almost accurate, as the players at the top of the list have the correct corresponding salary. A quick google search said mutate might fix this problem? 
+
+*Joining Salary Data with Pitcher Data*
+```{r}
+clean_name <- function(x) {
+  x |>
+    stri_trans_general("Latin-ASCII") |>
+    str_to_lower() |>
+    str_replace_all("[\\.,'*]", "") |>         # drop punctuation; bbref sometimes appends *
+    str_replace_all("\\s+(jr|sr|ii|iii|iv)\\b", "") |>
+    str_squish()
+}
+
+salaries <- read_csv("https://raw.githubusercontent.com/dstein110/jour405_spring26/refs/heads/main/project/salaries_spotrac_2025.csv") |>
+  mutate(
+    name_key = clean_name(player),
+    primary_pos = str_split_i(position, "/", 1)   # "SP/SP1" -> "SP"
+  )
+
+pitchers <- Pitcher_Data |>
+  mutate(name_key = clean_name(Player)) |>
+  filter(Team == "TOT" | !Player %in% Player[duplicated(Player)])   # keep TOT row for traded players
+
+pitchers_paid <- pitchers |>
+  inner_join(salaries, by = c("name_key", "Team" = "team"))
+
+# Pitchers missing salary
+pitchers |>
+  anti_join(salaries, by = c("name_key", "Team" = "team")) |>
+  select(Player, Team) |>
+  print(n = 30)
+
+# Salary rows with no matching pitcher (likely hitters — they'd match the pitcher frame instead)
+salaries |>
+  anti_join(pitchers, by = c("name_key", "Team" = "team")) |>
+  select(player, team, position)
+```
+Same error here as with the hitters, but overall the data seems correct and it appears your code did the job. 
+
+
+```{r}
+model <- lm(log(salary) ~ WAR, data = hitters_paid)
+summary(model)
+```
+```{r}
+hitters_paid |>
+  ggplot(aes(x = `WAR`, y = `salary`)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(x = "WAR", y = "Salary",
+       title = "WAR vs Annual Salary, MLB 2025")
+```
+First try at a regression with WAR and annual salary. Asked ChatGPT to fix the scale of the x-axis and to make the y-axis not scientific notation. Here's the code below and the error I got. 
+
+```{r}
+hitters_paid |>
+  ggplot(aes(x = WAR, y = salary)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, color = "red", linewidth = 1.5) +
+  scale_x_continuous(breaks = seq(floor(min(hitters_paid$WAR, na.rm = TRUE)),
+                                  ceiling(max(hitters_paid$WAR, na.rm = TRUE)),
+                                  by = 1)) +
+  scale_y_continuous(labels = scales::label_number(big.mark = ",")) +
+  labs(x = "WAR", y = "Salary",
+       title = "WAR vs Annual Salary, MLB 2025")
+```
+```{r}
+str(hitters_paid$WAR)
+unique(hitters_paid$WAR)[1:20]
+```
+```{r}
+hitters_paid$WAR <- as.numeric(gsub("–", "-", hitters_paid$WAR))
+str(hitters_paid$WAR)
+```
+```{r}
+hitters_paid |>
+  ggplot(aes(x = WAR, y = salary)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, color = "red", linewidth = 1.5) +
+  scale_x_continuous(breaks = seq(floor(min(hitters_paid$WAR, na.rm = TRUE)),
+                                  ceiling(max(hitters_paid$WAR, na.rm = TRUE)),
+                                  by = 1)) +
+  scale_y_continuous(labels = scales::label_number(big.mark = ",")) +
+  labs(x = "WAR", y = "Salary",
+       title = "WAR vs Annual Salary, MLB 2025")
+```
+After some help from ChatGPT, this is what my new regression  looks like. It helped me re-run the code and change the WAR column to be a numeric column (lines 133-140). Unfortunately I lost that conversation with ChatGPT in the process of making an account, so I don't have the exact commands. This is with the salary info from 2025. Still looks very sloppy, the data is very skewed as you predicted last week.
+
+```{r}
+salaries_24 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRYsYzRUOmn842E6odlmYDXKd8pVahxYDwjNXWQbzXIBt7kkezHIhMqT9grh5WRMwWsXU8DHzA-Qb30/pub?gid=395124327&single=true&output=csv")
+```
+*Inserting 2024 MLB Stats*
+```{r}
+hitters_24 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRYsYzRUOmn842E6odlmYDXKd8pVahxYDwjNXWQbzXIBt7kkezHIhMqT9grh5WRMwWsXU8DHzA-Qb30/pubhtml?gid=1942602075&single=true")
+pitchers_24 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRYsYzRUOmn842E6odlmYDXKd8pVahxYDwjNXWQbzXIBt7kkezHIhMqT9grh5WRMwWsXU8DHzA-Qb30/pubhtml?gid=973578780&single=true")
+```
+*Ran into a bit of a problem reading the data from 2024.* 
+
