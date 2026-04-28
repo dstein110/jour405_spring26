@@ -9,7 +9,7 @@ Multiple regression analysis is a statistical method used to understand the rela
 
 ```{r setup}
 library(tidyverse)
-#install.packages('corrplot')
+install.packages('corrplot')
 library(corrplot)
 ```
 
@@ -26,7 +26,7 @@ teams <- read_csv("https://raw.githubusercontent.com/dwillis/jour405_files/main/
 Next, we construct a linear model to analyze how different factors like `Yards Gained`, `Takeaways`, and `Points Scored` influence the number of wins. This model helps us quantify the relationships and assess which factors are significant predictors of success.
 
 ```{r}
-model <- lm(Wins ~ `Yards Gained` + Takeaways + `Points Scored`, data = teams)
+model <- lm(Wins ~ `Points Scored` + Takeaways + Giveaways, data = teams)
 summary(model)
 ```
 
@@ -54,14 +54,14 @@ The coefficients tell us the estimated effect of each independent variable on th
 
 Is this a useful model, based on what you've seen? Why?
 
-ANSWER HERE
+I think this model is somewhat useful, but definitely flawed. While the errors are evenly dispersed, there is still a wider range in the data and two of the three coefficients are not statistically significant. However, the regression does have a decently high adjusted r-squared, so the model isn't useless. 
 
 ## Correlation Analysis
 
 After building the model, we calculate the correlation matrix for our variables of interest. This matrix helps visualize the strength and direction of the relationships between each pair of variables.
 
 ```{r}
-selected_vars <- teams |>  select(`Yards Gained`, Takeaways, `Points Scored`, Wins)
+selected_vars <- teams |>  select(`Yards Gained`, Takeaways, `Giveaways`, Wins)
 cor(selected_vars)
 ```
 
@@ -80,8 +80,9 @@ The results from our correlation analysis show the strength of the relationships
 
 Which of these three factors - Yards Gained, Takeaways and Points Scored - have the most impact on wins? Are there any that do not seem impactful at all?
 
-ANSWER HERE
-
+From experimenting with the model, it seems points scored clearly has the most impact on wins, as it had by far the largest coefficient. Takeaways appears to have a relatively significant effect on wins, as its responsible for about 28% of the data. Conversely, yards gained does not seem to be impactful on wins at all, as when removing it from the model, the difference in the adjusted r-squared is negligible. 
 ## Using the Model (3 points)
 
 Without using the words "multiple regression model", describe how you could use this model to cover a team or game.
+
+I could use this model to argue what are the most important aspects of the team (offense, defense, etc.). I also think this model could be used to demonstrate the importance of signing defensive players in free agency, as the yards gained category doesn't seem to have an effect on wins. I could mention this model in a data-driven article about how the recent trend of paying offensive positions big money doesn't always necessarily lead to more wins. 
