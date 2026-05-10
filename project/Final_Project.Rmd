@@ -162,3 +162,52 @@ pitchers_24 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRYsYzR
 ```
 *Ran into a bit of a problem reading the data from 2024.* 
 
+
+
+
+
+
+*Lets load the MLB Hitter Data from 2024 and 2025*
+```{r}
+Hitters_2025 <- read_csv("Hitters_2025.csv")
+Hitters_2024 <- read_csv("Hitters_2024.csv")
+```
+*Now lets load the MLB Pitcher Data from 2024 and 2025*
+```{r}
+Pitchers_2025 <- read_csv("Pitchers_2025.csv")
+Pitchers_2024 <- read_csv("Pitchers_2024.csv")
+```
+*Lets load the MLB salary data from 2024 and 2025*
+```{r}
+MLB_Salaries_25 <- read_csv("salaries_spotrac_2025.csv")
+MLB_Salaries_24 <- read_csv("salaries_spotrac_2024.csv")
+```
+*Lets Generate Descriptive Stats for MLB Salaries*
+```{r}
+MLB_Salaries_25 |> summarize(
+  mean(salary),
+  median(salary),
+  min(salary),
+  max(salary))
+```
+```{r}
+MLB_Salaries_24 |> summarize(
+  mean(salary),
+  median(salary),
+  min(salary),
+  max(salary))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
