@@ -1,0 +1,333 @@
+---
+title: "final_project"
+---
+
+**Loading the Tidyverse and Stringi, cleaning the names of the MLB players from 2025 and 2024, so we can prepare to join the MLB stats with the MLB salary data.**
+```{r}
+library(tidyverse)
+library(stringi)
+
+clean_name <- function(x) {
+  x |>
+    stri_trans_general("Latin-ASCII") |>
+    str_to_lower() |>
+    str_replace_all("[\\.,'*#]", "") |>
+    str_replace_all("\\s+(jr|sr|ii|iii|iv)\\b", "") |>
+    str_squish()
+}
+```
+
+*All MLB stats and salaries from 2024 and 2025 are on CSVs. Now, we'll load the data.*
+
+```{r}
+hitters_25 <- read_csv("Hitters_2025.csv") |>
+  mutate(name_fix = clean_name(Player),
+         WAR = as.numeric(gsub("–", "-", WAR)))
+
+hitters_24 <- read_csv("Hitters_2024.csv") |>
+  mutate(name_fix = clean_name(Player),
+         WAR = as.numeric(gsub("–", "-", WAR)))
+
+pitchers_25 <- read_csv("Pitchers_2025.csv") |>
+  mutate(name_fix = clean_name(Player),
+         WAR = as.numeric(gsub("–", "-", WAR)))
+
+pitchers_24 <- read_csv("Pitchers_2024.csv") |>
+  mutate(name_fix = clean_name(Player),
+         WAR = as.numeric(gsub("–", "-", WAR)))
+
+salaries_25 <- read_csv("salaries_spotrac_2025.csv") |>
+  mutate(name_fix = clean_name(player),
+         primary_pos = str_split_i(position, "/", 1))
+
+salaries_24 <- read_csv("salaries_spotrac_2024.csv") |>
+  mutate(name_fix = clean_name(player),
+         primary_pos = str_split_i(position, "/", 1))
+```
+
+*Joining hitter stats from 2024 and 2025 with salaries*
+
+```{r}
+pitcher_positions <- c("SP", "RP", "P")
+
+hitter_salaries_25 <- salaries_25 |>
+  filter(!primary_pos %in% pitcher_positions) |>
+  group_by(name_fix) |>
+  slice_max(salary, n = 1, with_ties = FALSE) |>
+  ungroup()
+
+hitter_salaries_24 <- salaries_24 |>
+  filter(!primary_pos %in% pitcher_positions) |>
+  group_by(name_fix) |>
+  slice_max(salary, n = 1, with_ties = FALSE) |>
+  ungroup()
+
+hitters_paid_25 <- hitters_25 |>
+  distinct(name_fix, .keep_all = TRUE) |>
+  inner_join(hitter_salaries_25, by = "name_fix")
+
+hitters_paid_24 <- hitters_24 |>
+  distinct(name_fix, .keep_all = TRUE) |>
+  inner_join(hitter_salaries_24, by = "name_fix")
+```
+
+*Join pitching stats from 2024 and 2025 with salaries*
+
+```{r}
+pitcher_salaries_25 <- salaries_25 |>
+  filter(primary_pos %in% pitcher_positions) |>
+  group_by(name_fix) |>
+  slice_max(salary, n = 1, with_ties = FALSE) |>
+  ungroup()
+
+pitcher_salaries_24 <- salaries_24 |>
+  filter(primary_pos %in% pitcher_positions) |>
+  group_by(name_fix) |>
+  slice_max(salary, n = 1, with_ties = FALSE) |>
+  ungroup()
+
+pitchers_paid_25 <- pitchers_25 |>
+  distinct(name_fix, .keep_all = TRUE) |>
+  inner_join(pitcher_salaries_25, by = "name_fix")
+
+pitchers_paid_24 <- pitchers_24 |>
+  distinct(name_fix, .keep_all = TRUE) |>
+  inner_join(pitcher_salaries_24, by = "name_fix")
+```
+
+*Now we'll generate descriptive stats for the salaries in 2024 and 2025. The median salary number in particular will be useful when we compare salaries (and subsequent stats) with the average.*
+
+```{r}
+salaries_25 |> summarize(
+  mean = mean(salary),
+  median = median(salary),
+  min = min(salary),
+  max = max(salary))
+
+salaries_24 |> summarize(
+  mean = mean(salary),
+  median = median(salary),
+  min = min(salary),
+  max = max(salary))
+```
+**As we can see from the results, the median salary jumped from $750,000 to $770,000 between 2024 and 2025. Now we're going to compare salary with different MLB stats to see what stat has the highest correlation with a higher salary. We'll start with hitting stats.**
+
+
+*The first stat we're going to look at is WAR (Wins Above Replacement). WAR is an all-encompassing stat that takes into account offensive and defensive production and attempts to calculate how many wins individual players provide to a team. Lets run a linear regression with WAR and salary from 2025 MLB hitters.*
+
+```{r}
+WAR_Reg <- lm(salary ~ WAR, data = hitters_paid_25)
+summary(WAR_Reg)
+```
+**As we can see from the regression, the data is statistically significant, with an Adjusted R-squared of approximately 0.26. From this result we can infer that about 25% of the data can be explained by WAR. Lets graph the result.**
+
+**Graphing the linear regression**
+```{r}
+hitters_paid_25 |>
+  ggplot(aes(x = WAR, y = salary)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, color = "red", linewidth = 1.5) +
+  scale_x_continuous(breaks = seq(floor(min(hitters_paid_25$WAR, na.rm = TRUE)),
+                                  ceiling(max(hitters_paid_25$WAR, na.rm = TRUE)),
+                                  by = 1)) +
+  scale_y_continuous(labels = scales::label_number(big.mark = ",")) +
+  labs(x = "WAR", y = "Salary",
+       title = "WAR vs Annual Salary, MLB 2025")
+```
+**As seen from the graph, a lot of players hover near the 0$. This can be explained by the league minimum salary, which is around $750,000.**
+
+***Lets run the same test but with the 2024 Season***
+
+```{r}
+WAR_Reg_24 <- lm(salary ~ WAR, data = hitters_paid_24)
+summary(WAR_Reg_24)
+```
+**No difference in the p-value and not much of a difference in the Adjusted R-squared, which drops to 0.23. Let's run the same test, but with 2024 MLB stats instead of 2025.**
+
+```{r}
+hitters_paid_24 |>
+  ggplot(aes(x = WAR, y = salary)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, color = "red", linewidth = 1.5) +
+  scale_x_continuous(breaks = seq(floor(min(hitters_paid_24$WAR, na.rm = TRUE)),
+                                  ceiling(max(hitters_paid_24$WAR, na.rm = TRUE)),
+                                  by = 1)) +
+  scale_y_continuous(labels = scales::label_number(big.mark = ",")) +
+  labs(x = "WAR", y = "Salary",
+       title = "WAR vs Annual Salary, MLB 2024")
+```
+***Not much of a change between the 2025 and 2024 versions. Let's see if we can find a stat that more closely correlates with a high salary in the 2025 season. We'll start with Home Runs.***
+
+```{r}
+HR_Reg <- lm(salary ~ HR, data = hitters_paid_25)
+summary(HR_Reg)
+```
+**With the same p-value, a higher percentage of the data can be explained by home runs, according to the model (Adjusted R-squared = 0.31). According to the data, HR are a better predictor of a higher salary for hitters than WAR.**
+
+```{r}
+hitters_paid_25 |>
+  filter(HR > 0) |>
+  ggplot(aes(x = HR, y = salary)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, color = "red", linewidth = 1.5) +
+   scale_x_continuous(
+    limits = c(0, 60),      # min and max of x-axis
+    breaks = seq(0, 60, 5)  # tick marks every 5
+  ) +
+  scale_y_continuous(labels = scales::label_number(big.mark = ",")) +
+  labs(x = "Home Runs", y = "Salary",
+       title = "Home Runs vs Annual Salary, MLB 2025")
+```
+**We're getting closer, but maybe there's a hitter stat that more closely correlates. Let's look at Intentional Walks (IBB).**
+
+```{r}
+IBB_Reg <- lm(salary ~ IBB, data = hitters_paid_25)
+summary(IBB_Reg)
+```
+**How about that! The model tells us that Intentional Walks are the best predictor at a higher hitter salary (higher Adjusted R-squared). More of the data can be explained through IBB than WAR or Home Runs.**
+
+```{r}
+hitters_paid_25 |>
+  filter(IBB > 0) |>
+  ggplot(aes(x = IBB, y = salary)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, color = "red", linewidth = 1.5) +
+   scale_x_continuous(
+    limits = c(0, 40),      # min and max of x-axis
+    breaks = seq(0, 40, 4)  # tick marks every 4
+  ) +
+  scale_y_continuous(labels = scales::label_number(big.mark = ",")) +
+  labs(x = "Intentional Walks", y = "Salary",
+       title = "Intentional Walks vs Annual Salary, MLB 2025")
+```
+**Very interesting. Intentional Walks (IBB) has a higher Adjusted R-squared than WAR.(0.341 > 0.259) Let's see if pitching stats correlate more closely to salary than hitting stats**
+
+
+**Pitching WAR regression with salary**
+```{r}
+PitchWAR_Reg <- lm(salary ~ WAR, data = pitchers_paid_25)
+summary(PitchWAR_Reg)
+```
+**WAR doesn't explain as large a percentage of the data (0.1293) for pitchers as it does for hitters. This makes sense considering relievers don't typically generate a high WAR. Let's look at other pitching stats.**
+
+
+**Linear regression with ERA and salary from 2025 MLB pitchers**
+```{r}
+ERA_Reg <- lm(salary ~ ERA, data = pitchers_paid_25)
+summary(ERA_Reg)
+```
+**A much higher p-value, but still a statistically significant data set. However, the Adjusted R-squared is still very low.**
+
+
+**Graphing linear regression w/ ERA and salary, also adjusting by only including pitchers who have pitched 30 innings or more. This is done because the less innings you pitch, the more likely your ERA will be unsustainably high or low.**
+```{r}
+pitchers_paid_25 |>
+  filter(IP > 30) |>
+  ggplot(aes(x = ERA, y = salary)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, color = "red", linewidth = 1.5) +
+   scale_x_continuous(
+    limits = c(0, 6),      # min and max of x-axis
+    breaks = seq(0, 6, 0.5)  # tick marks every 0.5
+  ) +
+  scale_y_continuous(labels = scales::label_number(big.mark = ",")) +
+  labs(x = "ERA", y = "Salary",
+       title = "Earned Run vs Annual Salary, MLB 2025")
+```
+**As you can see from the nearly horizontal line, there's not much correlation between ERA and Salary, even when filtering out pitchers who've thrown less than 30 innings.**
+
+
+**Linear regression with Innings Pitched (IP) and salary, among 2025 MLB pitchers**
+```{r}
+IP_Reg <- lm(salary ~ IP, data = pitchers_paid_25)
+summary(IP_Reg)
+```
+**This is the best result we've gotten so far for pitchers. P-value is super low and the Adjusted R-squared is 0.21, much higher than the Adjusted R-squared in the ERA and WAR regressions. Let's graph the results.**
+
+```{r}
+pitchers_paid_25 |>
+  ggplot(aes(x = IP, y = salary)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, color = "red", linewidth = 1.5) +
+   scale_x_continuous(
+    limits = c(0, 210),      # min and max of x-axis
+    breaks = seq(0, 210, 50)  # tick marks every 50
+  ) +
+  scale_y_continuous(labels = scales::label_number(big.mark = ",")) +
+  labs(x = "Innings Pitched", y = "Salary",
+       title = "Innings Pitched vs Annual Salary, MLB 2025")
+```
+**Definitely a more diagonal line than the ERA regression. Let's run a few multiple regressions (for pitchers and hitters) to see which stats can generate the highest Adjusted R-Squared**
+
+**Creating Hitter Multiple Regression from 2025 Data. Three different models with shifting statistic variables.**
+```{r}
+# Model 1
+model1 <- lm(salary ~ WAR + RBI + IBB, data = hitters_paid_25)
+summary(model1)
+
+# Model 2
+model2 <- lm(salary ~ OBP + SLG + SO, data = hitters_paid_25)
+summary(model2)
+
+# Model 3
+model3 <- lm(salary ~ TB + IBB + HBP, data = hitters_paid_25)
+summary(model3)
+
+# Compare models
+cat("Model 1 - Adjusted R-squared:", summary(model1)$adj.r.squared, "\n")
+cat("Model 2 - Adjusted R-squared:", summary(model2)$adj.r.squared, "\n")
+cat("Model 3 - Adjusted R-squared:", summary(model3)$adj.r.squared, "\n")
+
+# Create comparison chart
+model_names <- c("Model 1", "Model 2", "Model 3")
+adj_r_squared <- c(summary(model1)$adj.r.squared,
+                   summary(model2)$adj.r.squared,
+                   summary(model3)$adj.r.squared)
+
+model_comparison <- data.frame(Model = model_names, Adjusted_R_squared = adj_r_squared)
+ggplot(model_comparison, aes(x = reorder(Model, Adjusted_R_squared), y = Adjusted_R_squared)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(title = "Hitting Model Comparison by Adjusted R-squared",
+       x = "Model")
+```
+**According to the comparison, Model 1 (WAR + RBI + IBB) has the highest Adjusted R-squared, which is above 0.4. Now lets run a multiple regression comparison with Pitching Stats.**
+
+**Creating Pitcher Multiple Regression from 2025 Data. Three different models with shifting statistic variables.**
+```{r}
+# Model 1
+model1 <- lm(salary ~ WAR + IP + SO, data = pitchers_paid_25)
+summary(model1)
+
+# Model 2
+model2 <- lm(salary ~ W + ER + WHIP, data = pitchers_paid_25)
+summary(model2)
+
+# Model 3
+model3 <- lm(salary ~ GS + IP + ERA, data = pitchers_paid_25)
+summary(model3)
+
+# Compare models
+cat("Model 1 - Adjusted R-squared:", summary(model1)$adj.r.squared, "\n")
+cat("Model 2 - Adjusted R-squared:", summary(model2)$adj.r.squared, "\n")
+cat("Model 3 - Adjusted R-squared:", summary(model3)$adj.r.squared, "\n")
+
+# Create comparison chart
+model_names <- c("Model 1", "Model 2", "Model 3")
+adj_r_squared <- c(summary(model1)$adj.r.squared,
+                   summary(model2)$adj.r.squared,
+                   summary(model3)$adj.r.squared)
+
+model_comparison <- data.frame(Model = model_names, Adjusted_R_squared = adj_r_squared)
+ggplot(model_comparison, aes(x = reorder(Model, Adjusted_R_squared), y = Adjusted_R_squared)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(title = "Pitching Model Comparison by Adjusted R-squared",
+       x = "Model")
+```
+**As we can see from the graph, it appears that Model 1 (WAR + IP + SO) has the highest Adjusted R-squared, but the number is much lower than the best model from the hitter multiple regression. What does this mean? One takeaway could be that pitcher salary is much harder to predict than for hitters.**
+
+*Story Pitch*
+There are many different angles to take with the data above, but I think I could write a story on which statistics are most important in determining a player's salary, both for pitchers and hitters. As shown by the linear regressions, WAR and Home Runs are key in predicting a player's salary, but intentional walks are statistically more predictive of a higher salary than the other two hitting stats (conclusion drawn from the higher Adjusted R-squared). I think that could be a potential lead or way to grab the reader's attention. However, there were far more home runs than intentional walks, so sample size could potentially be a problem. But as we saw with the multiple regression, it appears that WAR, RBI and IBB are the best three stats to predict a higher salary for hitters. On the pitching side, WAR, IP and SO are the best three stats for predicting salary, but it is significantly more difficult to predict than hitters. I think that part of my reporting for this story could be to interview agents or MLB General Managers and find out if they think pitcher contracts are less predictable. It may be beneficial to ask agents in particular if they look at stats like WAR and Strikeouts and see better numbers in those categories as a way to make their clients more money.
+
+
